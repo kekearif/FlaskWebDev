@@ -1,11 +1,9 @@
-{% if user %}
-<h1>Hello {{ name|upper }} Template!</h1>
-{% for friend in friends %}
-<h1>Hey {{ friend }}!</h1>
-{% endfor %}
-{% else %}
-<h1>Hello STRANGER Template!</h1>
-{% endif %}
-<!-- Note we use a var filter above supplied by Jinjia2 -->
-<!-- Note the if statements use different syntax -->
-<!-- Note the use of endif and endfor -->
+{% extends "base.html" %}
+
+{% block title %}Flasky{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+  <h1>Hello, {% if name %}{{ name }}{% else %}stranger{% endif %}!</h1>
+</div>
+{% endblock %}
