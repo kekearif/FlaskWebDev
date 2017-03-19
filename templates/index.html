@@ -1,11 +1,13 @@
 {% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+<!-- First is standard extension -->
+<!-- Second is jinja import, this takes all the methods puts in wtf obj -->
 
 {% block title %}Flasky{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
-  <h1>Hello Template!</h1>
-  <p1>The current time is {{ moment(current_time).format('LLL') }}.</p>
-  <p1>That was {{ moment(current_time).fromNow(refresh=true) }}.</p>
+  <h1>Hello, {% if name %}{{ name }}{% else %}stranger{% endif %}!</h1>
 </div>
+{{ wtf.quick_form(form) }}
 {% endblock %}
