@@ -1,0 +1,53 @@
+{% extends "bootstrap/base.html" %}
+
+<!-- bootstrap includes jquery.js here we import moment.js -->
+<!-- Use the included scripts block -->
+{% block scripts %}
+{{ super() }}
+{{ moment.include_moment() }}
+{% endblock %}
+
+<!-- Call the super  and boiler code for icon -->
+{% block head %}
+{{ super() }}
+<!-- Note the use of URL for to generate the url -->
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+{% endblock %}
+
+<!-- Use bootstrap title  -->
+{% block title %}Flasky{% endblock %}
+
+<!-- Use bootstrap navbar  -->
+{% block navbar %}
+<!-- Use bootstrap defined navbar class -->
+<div class="navbar navbar-inverse" role="navigation">
+  <!-- Use bootstrap defined container class etc -->
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Flasky</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="/">Home</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Use bootstrap content  -->
+{% block content %}
+<div class="container">
+  {% block page_content %}{% endblock %}
+</div>
+{% endblock %}
+
+<!-- We are picking and choosing from the giant bootstrap template -->
+<!-- Can look more into div and bootstrap later etc getbootstrap.com -->
