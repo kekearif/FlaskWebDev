@@ -1,21 +1,55 @@
+import os
+from flask_script import Manager
 from flask import Flask, render_template, session, redirect, url_for, flash
-from flask.ext.bootstrap import Bootstrap
-from flask.ext.moment import Moment
-from flask.ext.wtf import Form
+from flask_bootstrap import Bootstrap
+from flask_moment import Moment
+from flask_wtf import Form
 from wtforms import StringField, SubmitField
 from wtforms.validators import Required
+from flask_sqlalchemy import SQLAlchemy
+# Note that flask.ext is no longer used. We use flask_extname for import
 
 
 app = Flask(__name__)
+manager = Manager(app)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
-app.config['SECRET_KEY'] = 'sfd7868732hfayf92'
 # The __name__ argument is used for flask to determine the root path of the app
 # Note how the ext is init the same as the others, passing the app in
 # This moment object is now available in templates
 # The config is a dictionary. sec key is a config var used by flask and exts
 # First wtf import is the flask ext
 # The other two are from the wtforms package
+
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SECRET_KEY'] = 'sfd7868732hfayf92'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] =\
+    'sqlite:////' + os.path.join(basedir, 'data.sqlite')
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+db = SQLAlchemy(app)
+# Basic database setup
+
+
+class Role(db.Model):
+    __tablename__ = 'roles'  # Default var name
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    users = db.relationship('User', backref='role')
+
+    def __repr__(self):  # Override for testing
+        return '<Role %r>' % self.name
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)  # All models need prim key id
+    username = db.Column(db.String(64), unique=True, index=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+    def __repr__(self):  # Override for testing
+        return '<User %r>' % self.username
 
 
 class NameForm(Form):
@@ -63,4 +97,4 @@ def internal_server_error(e):
 
 
 if __name__ == '__main__':  # Only run dev server if script ex diretly
-    app.run(debug=True)
+    manager.run()
