@@ -1,6 +1,6 @@
 import os
-from flask_script import Manager
-from flask import Flask, render_template, session, redirect, url_for, flash
+from flask_script import Manager, Shell
+from flask import Flask, render_template, session, redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_wtf import Form
@@ -23,6 +23,7 @@ moment = Moment(app)
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+# The key should really be put in the system config
 app.config['SECRET_KEY'] = 'sfd7868732hfayf92'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] =\
@@ -31,12 +32,20 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db = SQLAlchemy(app)
 # Basic database setup
 
+# Here we have a one to many relationship, one role can have many users
+# We must declare this relationship. e.g users in role
+# If we pull a model from our table we can now easily get all the users
+# Backref allows us to pull a user and instantly get the role object
+
 
 class Role(db.Model):
     __tablename__ = 'roles'  # Default var name
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    users = db.relationship('User', backref='role')
+    # Declare the relationship one - many , role - many users
+    # This is the owning side
+    # lazy='dynamic' allows us to add filters to the users
+    users = db.relationship('User', backref='role', lazy='dynamic')
 
     def __repr__(self):  # Override for testing
         return '<Role %r>' % self.name
@@ -46,6 +55,7 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)  # All models need prim key id
     username = db.Column(db.String(64), unique=True, index=True)
+    # Not the relationship declaration. Here we are just setting the link
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
     def __repr__(self):  # Override for testing
@@ -64,14 +74,19 @@ def index():
     form = NameForm()
     # Check all validators are ok
     if form.validate_on_submit:
-        old_name = session.get('name')
-        if old_name is not None and old_name != form.name.data:
-            flash('Looks like you have changed your name now!')
-            # flash sends a message in the response
+        user = User.query.filter_by(username=form.name.data).first()
+        user_role = Role.query.filter_by(name='User').first()
+        if user is None:
+            user = User(username=form.name.data, role=user_role)
+            db.session.add(user)
+            session['known'] = False
+        else:
+            session['known'] = True
         session['name'] = form.name.data  # When submit set the name
         redirect(url_for("index"))
         form.name.data = ''
-    return render_template('index.html', name=session.get('name'), form=form)
+    return render_template('index.html', name=session.get('name'), form=form,
+                           known=session.get('known', False))
     # Get is standard dict method that returns None if nothing
 
 
@@ -94,6 +109,16 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('500.html')
+
+
+# Tbis is my function definition
+def make_shell_context():
+    return dict(app=app, db=db, User=User, Role=Role)
+
+
+# Here we pass in the dictionary to the Shell
+manager.add_command('shell', Shell(make_context=make_shell_context))
+manager.add
 
 
 if __name__ == '__main__':  # Only run dev server if script ex diretly
