@@ -7,6 +7,7 @@ from flask_wtf import Form
 from wtforms import StringField, SubmitField
 from wtforms.validators import Required
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate, MigrateCommand
 # Note that flask.ext is no longer used. We use flask_extname for import
 
 
@@ -30,6 +31,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] =\
     'sqlite:////' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 # Basic database setup
 
 # Here we have a one to many relationship, one role can have many users
@@ -55,6 +57,7 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)  # All models need prim key id
     username = db.Column(db.String(64), unique=True, index=True)
+    age = db.Column(db.Integer)
     # Not the relationship declaration. Here we are just setting the link
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
@@ -116,9 +119,10 @@ def make_shell_context():
     return dict(app=app, db=db, User=User, Role=Role)
 
 
-# Here we pass in the dictionary to the Shell
+# Here we pass in the dictionary to the shell
+# Add MigrateCommand to the script manager object that is attached to db
 manager.add_command('shell', Shell(make_context=make_shell_context))
-manager.add
+manager.add_command('db', MigrateCommand)
 
 
 if __name__ == '__main__':  # Only run dev server if script ex diretly
