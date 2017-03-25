@@ -8,6 +8,8 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import Required
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, MigrateCommand
+from flask_mail import Mail, Message
+from threading import Thread
 # Note that flask.ext is no longer used. We use flask_extname for import
 
 
@@ -33,6 +35,17 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 # Basic database setup
+
+app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
+app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <flasky@example.com>'
+app.config['FLASKY_ADMIN'] = 'keke.arif@snapask.co'
+mail = Mail(app)
+
 
 # Here we have a one to many relationship, one role can have many users
 # We must declare this relationship. e.g users in role
@@ -70,6 +83,25 @@ class NameForm(Form):
     submit = SubmitField('Submit')
 
 
+# Put the method we want async in here
+def send_async_email(app, msg):
+    # Need to create this new app context for the thread work
+    with app.app_context():
+        mail.send(msg)
+
+
+# **kwargs allows us to pass command line stuff e.g. user=user
+def send_email(to, subject, template, **kwargs):
+    msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject,
+                  sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
+    # Target and the args to pass, just start and return
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
+    return thr
+
+
 # GET is the default if we provide dict need to add get if need it
 # Here we need a dict for the POST method on the form
 @app.route('/', methods=['GET', 'POST'])
@@ -83,6 +115,9 @@ def index():
             user = User(username=form.name.data, role=user_role)
             db.session.add(user)
             session['known'] = False
+            if app.config['FLASKY_ADMIN']:
+                send_email(app.config['FLASKY_ADMIN'], 'New User',
+                           'mail/new_user', user=user)
         else:
             session['known'] = True
         session['name'] = form.name.data  # When submit set the name
