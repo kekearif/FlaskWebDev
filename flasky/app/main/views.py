@@ -6,7 +6,7 @@ from .forms import NameForm
 from .. import db
 # From the package space above e.g. app import db
 # Use . to get from the __init__
-from ..models import User
+from ..models import User, Role
 # From the space above import the User object from models
 from ..email import send_email
 
@@ -16,8 +16,9 @@ def index():
     form = NameForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.name.data).first()
+        role = Role.query.filter_by(name='User').first()
         if user is None:
-            user = User(username=form.name.data)
+            user = User(username=form.name.data, role=role)
             db.session.add(user)
             session['known'] = False
             if current_app.config['FLASKY_ADMIN']:
