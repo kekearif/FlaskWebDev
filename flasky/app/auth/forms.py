@@ -3,6 +3,7 @@ from wtforms.validators import Required, Email, Length, Regexp, EqualTo
 from flask_wtf import Form
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms import ValidationError
+from flask_login import current_user
 
 
 class LoginForm(Form):
@@ -37,3 +38,18 @@ class RegistrationForm(Form):
     def validate_email(self, field):
         if User.query.filter_by(email=field.data).first():
             raise ValidationError("Email is already registered.")
+
+
+class ChangePasswordForm(Form):
+    current_password = PasswordField('Current password',
+                                     validators=[Required()])
+    password = PasswordField('Password', validators=[Required(),
+                             EqualTo('password2',
+                             message="Passwords must match")])
+    password2 = PasswordField('Confirm password', validators=[Required()])
+    submit = SubmitField('Update Password')
+
+    # Custom validator
+    def validate_current_password(self, field):
+        if not current_user.verify_password(field.data):
+            raise ValidationError("Current password incorrect.")
