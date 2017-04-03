@@ -1,8 +1,10 @@
 from . import db
 from . import login_manager
-# From current package eg app __init__ import db, login_manager
+# From current package eg app __init__ import db login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from flask import current_app
 
 
 class Role(db.Model):
@@ -23,6 +25,8 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
     username = db.Column(db.String(64), unique=True, index=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
+    confirmed = db.Column(db.Boolean, default=False)
+    # Note the use of defualts here
 
     # Custom property getter
     @property
@@ -42,6 +46,24 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
 
     # Note that we have inherited from UserMixin the methods:
     # is_authenticated, is_active, is_anonymous, get_id
+
+    # 60 min standard exp time
+    def generate_confirmation_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'confirm': self.id})
+
+    def confirm(self, token):
+        # Don't need expiration here as not generating
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        if data.get('confirm') != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
 
 
 # This callback requires a method with a single param that returns an int

@@ -21,6 +21,7 @@ class RegistrationForm(Form):
                            Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0,
                            'Usernames must have only letters, numbers,'
                                   'underscores or dots')])
+    # Quote the passwordField python feature
     password = PasswordField('Password', validators=[Required(),
                              EqualTo('password2',
                              message="Passwords must match")])
@@ -34,5 +35,5 @@ class RegistrationForm(Form):
             raise ValidationError('Username already in use')
 
     def validate_email(self, field):
-        if User.query.filter_by(email=field.data):
+        if User.query.filter_by(email=field.data).first():
             raise ValidationError("Email is already registered.")

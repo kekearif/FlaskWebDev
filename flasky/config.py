@@ -6,6 +6,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 # Base config have vars common to all
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'DDFHSJ734H927YF9843'
+    # This commits auto at the end of every request!!!!
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAIL_SERVER = 'smtp.googlemail.com'
