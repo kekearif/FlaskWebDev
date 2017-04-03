@@ -53,3 +53,27 @@ class ChangePasswordForm(Form):
     def validate_current_password(self, field):
         if not current_user.verify_password(field.data):
             raise ValidationError("Current password incorrect.")
+
+
+class PasswordResetRequestForm(Form):
+    email = StringField('Enter your registered email address',
+                        validators=[Required(), Length(1, 64), Email()])
+    submit = SubmitField('Send Reset Link')
+
+    def validate_email(self, field):
+        if not User.query.filter_by(email=field.data).first():
+            raise ValidationError("This email address is not registered.")
+
+
+class PasswordResetForm(Form):
+    email = StringField('Enter your registered email address',
+                        validators=[Required(), Length(1, 64), Email()])
+    password = PasswordField('New password', validators=[Required(),
+                             EqualTo('password2',
+                             message="Passwords must match")])
+    password2 = PasswordField('Confirm password', validators=[Required()])
+    submit = SubmitField('Reset Password')
+
+    def validate_email(self, field):
+        if not User.query.filter_by(email=field.data).first():
+            raise ValidationError("This email address is not registered.")

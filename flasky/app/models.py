@@ -65,6 +65,23 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
         db.session.add(self)
         return True
 
+    def generate_reset_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'reset': self.id})
+        # Note we use a new token method with reset instead of confirm
+
+    def reset_password(self, token, new_password):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        if data.get('reset') != self.id:
+            return False
+        self.password = new_password
+        db.session.add(self)
+        return True
+
 
 # This callback requires a method with a single param that returns an int
 # The param is a user_id it passes in (most likely the primary_key)
