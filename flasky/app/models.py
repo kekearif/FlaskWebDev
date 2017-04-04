@@ -82,6 +82,23 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
         db.session.add(self)
         return True
 
+    def generate_change_email_token(self, new_email, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        # Here we put the email in the token
+        return s.dumps({'change_email': self.id, 'new_email': new_email})
+
+    def change_email(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        if data.get('change_email') != self.id:
+            return False
+        self.email = data.get('new_email')
+        db.session.add(self)
+        return True
+
 
 # This callback requires a method with a single param that returns an int
 # The param is a user_id it passes in (most likely the primary_key)

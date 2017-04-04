@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from . import auth
 from ..models import User
 from .forms import LoginForm, RegistrationForm, ChangePasswordForm
-from .forms import PasswordResetRequestForm, PasswordResetForm
+from .forms import PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
 from .. import db
 from ..email import send_email
 
@@ -134,6 +134,31 @@ def password_reset(token):
                 flash('Your password has been reset.')
                 return redirect(url_for('auth.login'))
             else:
-                flash('The reset email link is invalid or expired')
+                flash('The reset password link is invalid or expired')
         return redirect(url_for('main.index'))
     return render_template('auth/password_reset.html', form=form)
+
+
+@auth.route('/change_email_request', methods=['GET', 'POST'])
+@login_required
+def change_email_request():
+    form = ChangeEmailForm()
+    if form.validate_on_submit():
+        token = current_user.generate_change_email_token(form.email.data)
+        send_email(current_user.email, 'Change your Email Address',
+                   'auth/email/change_email', user=current_user, token=token)
+        flash('An email with a confirmation link has been sent to your new '
+              'email address.')
+        return redirect(url_for('main.index'))
+    return render_template('auth/change_email_request.html', form=form)
+
+
+# Note that <token> allows us to put it in the link
+@auth.route('/change_email/<token>')
+@login_required
+def change_email(token):
+    if current_user.change_email(token):
+        flash('Your email address has been updated')
+    else:
+        flash('The change email link is invalid or expired')
+    return redirect(url_for('main.index'))
