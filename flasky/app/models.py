@@ -62,7 +62,8 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
             if self.email == current_app.config['FLASKY_ADMIN']:
                 self.role = Role.query.filter_by(permissions='0xff').first()
             if self.role is None:
-                self.role = Role.query.filter_by(defualt='True').first()
+                print "Checking for default role"
+                self.role = Role.query.filter_by(default=True).first()
 
     # Custom property getter
     @property
