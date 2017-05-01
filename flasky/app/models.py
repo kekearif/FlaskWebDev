@@ -4,8 +4,9 @@ from . import login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app
+from flask import current_app, request
 from datetime import datetime
+import hashlib
 
 
 class Role(db.Model):
@@ -61,6 +62,7 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
     # Here we are passing functions to call
     member_since = db.Column(db.DateTime, default=datetime.utcnow)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    avatar_hash = db.Column(db.String(32))
 
     # Custom init to assign a role
     # Note we pass a variable number of arguments eg User(username='bleh')
@@ -72,6 +74,10 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
             if self.role is None:
                 print "Checking for default role"
                 self.role = Role.query.filter_by(default=True).first()
+
+        if self.email is not None and self.avatar_hash is None:
+            self.avatar_hash = hashlib.md5(
+                self.email.encode('utf-8')).hexdigest()
 
     # Custom property getter
     @property
@@ -141,6 +147,8 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
         if data.get('change_email') != self.id:
             return False
         self.email = data.get('new_email')
+        self.avatar_hash = hashlib.md5(
+            self.email.encode('utf-8')).hexdigest()
         db.session.add(self)
         return True
 
@@ -155,6 +163,19 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
         self.last_seen = datetime.utcnow()
         db.session.add(self)
         # This will commit at the end of a request
+
+    def gravatar(self, size=100, default='identicon', rating='g'):
+        # note how with Python don't need to first define url, not static typed
+        # What is this?
+        if request.is_secure:
+            url = 'http://secure.gravatar.com/avatar'
+        else:
+            url = 'http://www.gravatar.com/avatar'
+        # Note the use of or if not true
+        hash = self.avatar_hash or hashlib.md5(
+                self.email.encode('utf-8')).hexdigest()
+        return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
+            url=url, hash=hash, size=size, default=default, rating=rating)
 
 
 # Add some functionality to the non-logged in user object that flask_login uses
