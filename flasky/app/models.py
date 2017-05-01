@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
+from datetime import datetime
 
 
 class Role(db.Model):
@@ -53,6 +54,13 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
     # Note the use of defualts here
+    name = db.Column(db.String(64))
+    location = db.Column(db.String(64))
+    # Text does not require a max length
+    about_me = db.Column(db.Text())
+    # Here we are passing functions to call
+    member_since = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Custom init to assign a role
     # Note we pass a variable number of arguments eg User(username='bleh')
@@ -142,6 +150,11 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
 
     def is_administrator(self):
         return self.can(Permission.ADMINISTER)
+
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
+        # This will commit at the end of a request
 
 
 # Add some functionality to the non-logged in user object that flask_login uses

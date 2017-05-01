@@ -37,6 +37,9 @@
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li><a href="/">Home</a></li>
+                {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('main.user', username=current_user.username) }}">Profile</a></li>
+                {% endif %}
             </ul>
             <!-- This also puts the link in the collapse and on the right of bar -->
             <!-- current_user is auto available from the ext and login_manager -->
