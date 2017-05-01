@@ -155,6 +155,10 @@ class AnonymousUser(AnonymousUserMixin):
         return False
 
 
+login_manager.anonymous_user = AnonymousUser
+# Set the actual class for the login manager
+
+
 class Permission:
     FOLLOW = 0x01
     COMMENT = 0x02
