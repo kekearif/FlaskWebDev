@@ -16,6 +16,8 @@ class Role(db.Model):
     default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
     users = db.relationship('User', backref='role', lazy='dynamic')
+    # Note that a relationship is not actually displayed in the database UI
+    # The relationship is just so we can query
     # lazy = 'dynamic' allows us to apply filters
 
     def __repr__(self):
@@ -63,6 +65,7 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
     member_since = db.Column(db.DateTime, default=datetime.utcnow)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
     # Custom init to assign a role
     # Note we pass a variable number of arguments eg User(username='bleh')
@@ -201,6 +204,14 @@ class Permission:
     ADMINISTER = 0x80
     # These are hex codes from binary.
     # Note they are class vars not instance with self
+
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
 
 # This callback requires a method with a single param that returns an int

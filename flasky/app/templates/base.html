@@ -12,8 +12,10 @@
 {% block head %}
 {{ super() }}
 <!-- Note the use of URL for to generate the url -->
+<!-- Here we incluse the css -->
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 {% endblock %}
 
 <!-- Use bootstrap title  -->

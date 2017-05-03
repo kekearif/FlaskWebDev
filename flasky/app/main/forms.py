@@ -50,3 +50,8 @@ class EditProfileAdminForm(FlaskForm):
         if field.data != self.user.email and \
              User.query.filter_by(email=field.data).first():
             raise ValidationError("Email is already registered.")
+
+
+class PostForm(FlaskForm):
+    body = TextField("What's on your mind?", validators=[Required()])
+    submit = SubmitField('Submit')
