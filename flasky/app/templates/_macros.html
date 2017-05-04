@@ -1,0 +1,41 @@
+{% macro pagination_widget(pagination, endpoint) %}
+<!-- Define the macro with vars -->
+<ul class="pagination">
+  <!-- Use bootstrap pagination class -->
+  <!-- Disable link if it is the first page -->
+    <li{% if not pagination.has_prev %} class="disabled"{% endif %}>
+        <a href="{% if pagination.has_prev %}{{ url_for(endpoint, page=pagination.prev_num, **kwargs) }}{% else %}#{% endif %}">
+            &laquo;
+            <!-- get url for current endpoint and pass in page number -->
+            <!-- left arrow html entity -->
+        </a>
+    </li>
+    <!-- Now add the other links -->
+    {% for p in pagination.iter_pages() %}
+        {% if p %}
+            {% if p == pagination.page %}
+            <!-- Style active e.g. selected -->
+            <li class="active">
+                <a href="{{ url_for(endpoint, page = p, **kwargs) }}">{{ p }}</a>
+            </li>
+            {% else %}
+            <!-- Standard style -->
+            <li>
+                <a href="{{ url_for(endpoint, page = p, **kwargs) }}">{{ p }}</a>
+            </li>
+            {% endif %}
+        {% else %}
+        <!-- There will auto be a divider -->
+        <!-- This triggers for None instead of a page number -->
+        <li class="disabled"><a href="#">&hellip;</a></li>
+        {% endif %}
+    {% endfor %}
+    <!-- Similar to the first link -->
+    <li{% if not pagination.has_next %} class="disabled"{% endif %}>
+        <!-- Add **kwargs -->
+        <a href="{% if pagination.has_next %}{{ url_for(endpoint, page=pagination.next_num, **kwargs) }}{% else %}#{% endif %}">
+            &raquo;
+        </a>
+    </li>
+</ul>
+{% endmacro %}

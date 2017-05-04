@@ -1,4 +1,5 @@
-from flask import render_template, abort, flash, redirect, url_for
+from flask import render_template, abort, flash, redirect, url_for, request
+from flask import current_app
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm
 from ..decorators import admin_required, permission_required
@@ -18,7 +19,16 @@ def index():
         db.session.add(post)
         return redirect(url_for('.index'))
     posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return render_template('index.html', form=form, posts=posts)
+    # Almost like the standard Python get but we can also define a type
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, per_page=current_app.config["FLASKY_POSTS_PER_PAGE"],
+        error_out=False)
+    # The error out above will show a 404 if page is out of range
+    # The pagination object above has various vars and methods that are useful
+    posts = pagination.items
+    return render_template('index.html', form=form, posts=posts,
+                           pagination=pagination)
 
 
 @main.route('/user/<username>')

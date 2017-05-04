@@ -75,7 +75,6 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
             if self.email == current_app.config['FLASKY_ADMIN']:
                 self.role = Role.query.filter_by(permissions='0xff').first()
             if self.role is None:
-                print "Checking for default role"
                 self.role = Role.query.filter_by(default=True).first()
 
         if self.email is not None and self.avatar_hash is None:
@@ -180,6 +179,34 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url=url, hash=hash, size=size, default=default, rating=rating)
 
+    @staticmethod
+    def generate_fake(count=100):
+        # Note how we can do an import here
+        from sqlalchemy.exc import IntegrityError
+        from random import seed
+        import forgery_py
+
+        # Set the randomizer seed for forgery
+        seed()
+        # 0 .. 100 , generate 100 items
+        for i in range(count):
+            u = User(email=forgery_py.internet.email_address(),
+                     username=forgery_py.internet.user_name(True),
+                     password=forgery_py.lorem_ipsum.word(),
+                     confirmed=True,
+                     name=forgery_py.name.full_name(),
+                     location=forgery_py.address.city(),
+                     about_me=forgery_py.lorem_ipsum.sentence(),
+                     member_since=forgery_py.date.date(True)
+                     )
+            db.session.add(u)
+            # Username and email but be unique in our database
+            # Check we don't accidently get a duplicate
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+
 
 # Add some functionality to the non-logged in user object that flask_login uses
 # We can call can and is_administrator on non-logged in users now
@@ -212,6 +239,26 @@ class Post(db.Model):
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    @staticmethod
+    def generate_fake(count=100):
+        # Note how we can do an import here
+        from random import seed, randint
+        import forgery_py
+
+        # Set the randomizer seed for forgery
+        seed()
+        # 0 .. 100 , generate 100 items
+        user_count = User.query.count()
+        for i in range(count):
+            # Can use offset like an array
+            u = User.query.offset(randint(0, user_count - 1)).first()
+            p = Post(body=forgery_py.lorem_ipsum.sentences(randint(1, 3)),
+                     timestamp=forgery_py.date.date(True),
+                     author=u)
+            # No unique fields here so don't need to error check
+            db.session.add(p)
+            db.session.commit()
 
 
 # This callback requires a method with a single param that returns an int
