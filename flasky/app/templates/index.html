@@ -20,3 +20,9 @@
     {{ macros.pagination_widget(pagination, '.index') }}
 </div>
 {% endblock %}
+
+<!-- Adding the extra javascript for the pagedown here -->
+{% block scripts %}
+{{ super() }}
+{{ pagedown.include_pagedown() }}
+{% endblock %}
