@@ -18,7 +18,7 @@ def index():
                     author=current_user._get_current_object())
         db.session.add(post)
         return redirect(url_for('.index'))
-    #posts = Post.query.order_by(Post.timestamp.desc()).all()
+    # posts = Post.query.order_by(Post.timestamp.desc()).all()
     # Almost like the standard Python get but we can also define a type
     page = request.args.get('page', 1, type=int)
     pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
@@ -92,6 +92,31 @@ def edit_profile_admin(id):
     form.location.data = user.location
     form.about_me.data = user.about_me
     return render_template('edit_profile.html', form=form, user=user)
+
+
+@main.route('/post/<int:id>')
+def post(id):
+    # Query the primary key that happens to be the ID in this case
+    post = Post.query.get_or_404(id)
+    return render_template('post.html', posts=[post])
+
+
+@main.route('/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+# Can I edit all users posts with this?
+def edit(id):
+    post = Post.query.get_or_404(id)
+    if current_user != post.author and \
+       not current_user.can(Permission.ADMINISTER):
+            abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.body = form.body.data
+        db.session.add(post)
+        flash('This post has been updated')
+        return redirect(url_for('.post', id=post.id))
+    form.body.data = post.body
+    return(render_template('edit_post.html', form=form))
 
 
 # Just an example of how the permissions could work
