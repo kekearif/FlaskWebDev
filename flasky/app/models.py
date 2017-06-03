@@ -11,6 +11,16 @@ from markdown import markdown
 import bleach
 
 
+class Follow(db.Model):
+    # Two primary keys Self-Referential relationship
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
@@ -68,6 +78,18 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    # Here is the many to many relationship
+    # Need to specify which foreign key to use here because there are two
+    followed = db.relationship('Follow',
+                               foreign_keys=[Follow.follower_id],
+                               backref=db.backref('follower', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all, delete-orphan')
+    followers = db.relationship('Follow',
+                                foreign_keys=[Follow.followed_id],
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all, delete-orphan')
 
     # Custom init to assign a role
     # Note we pass a variable number of arguments eg User(username='bleh')
@@ -208,6 +230,26 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
+
+    def follow(self, user):
+        if not self.is_following(user):
+            # Note we can use the backrefs we made here
+            f = Follow(followed=user, follower=self)
+            db.session.add(f)
+
+    def unfollow(self, user):
+        if self.is_following(user):
+            f = self.followed.filter_by(followed_id=user.id).first()
+            if f:
+                db.session.delete(f)
+
+    def is_followed_by(self, user):
+        # Standard relationship query here
+        return self.followers.filter_by(
+            follower_id=user.id).first() is not None
+
+    def is_following(self, user):
+        return self.followed.filter_by(followed_id=user.id).first() is not None
 
 
 # Add some functionality to the non-logged in user object that flask_login uses
