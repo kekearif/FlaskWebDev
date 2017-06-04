@@ -119,6 +119,80 @@ def edit(id):
     return(render_template('edit_post.html', form=form))
 
 
+# Note we don't define the paramater type here as string is default
+@main.route('/follow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def follow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('This user does not exist')
+        return redirect(url_for('.index'))
+    if current_user.is_following(user):
+        flash('You are already following this user')
+        return redirect(url_for('.user', username=username))
+    current_user.follow(user)
+    flash('You are now following %s' % username)
+    return redirect(url_for('.user', username=username))
+
+
+@main.route('/unfollow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def unfollow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('.index'))
+    if not current_user.is_following(user):
+        flash('You are not following this user.')
+        return redirect(url_for('.user', username=username))
+    current_user.unfollow(user)
+    flash('You are not following %s anymore.' % username)
+    return redirect(url_for('.user', username=username))
+
+
+@main.route('/followers/<username>')
+def followers(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('This user does not exist')
+        return redirect(url_for('.index'))
+    # Get page number from request or defualt 1
+    page = request.args.get('page', 1, type=int)
+    # Error out does 404 error if set to true when page outside range
+    pagination = user.followers.paginate(
+        page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],
+        error_out=False
+    )
+    # Here we make a new list of dicts to make it easier to process
+    follows = [{'user': item.follower, 'timestamp': item.timestamp}
+               for item in pagination.items]
+    # Pass the name of the endpoint for the pagination widget
+    # We need this because we are using the same template
+    return render_template('followers.html', user=user, title='Followers of',
+                           endpoint='.followers', pagination=pagination,
+                           follows=follows)
+
+
+# Similar to the route above
+@main.route('/followed-by/<username>')
+def followed_by(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('This user does not exist')
+        return redirect(url_for('.index'))
+    page = request.args.get('page', 1, type=int)
+    pagination = user.followed.paginate(
+        page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],
+        error_out=False)
+    follows = [{'user': item.followed, 'timestamp': item.timestamp}
+               for item in pagination.items]
+    return render_template('followers.html', user=user, title="Followed by",
+                           endpoint='.followed_by', pagination=pagination,
+                           follows=follows)
+
+
 # Just an example of how the permissions could work
 @main.route('/admin')
 @login_required
