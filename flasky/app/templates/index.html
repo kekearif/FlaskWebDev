@@ -14,6 +14,15 @@
     {{ wtf.quick_form(form) }}
     {% endif %}
 </div>
+<p>
+  {% if current_user.is_authenticated %}
+    <ul class="nav nav-tabs">
+      <!-- Set to active based on a condition -->
+      <li{% if not show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_all') }}">All</a></li>
+      <li{% if show_followed %} class="active"{% endif %}><a href="{{ url_for('.show_followed') }}">Followers</a></li>
+    </ul>
+  {% endif %}
+</p>
 <!-- Here we include a partial template -->
 {% include '_posts.html' %}
 <div class="pagination">

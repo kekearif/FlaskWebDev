@@ -104,6 +104,8 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
+        # So we can see our own posts in followed too
+        self.follow(self)
 
     # Custom property getter
     @property
@@ -251,6 +253,23 @@ class User(UserMixin, db.Model):  # Here we inherit from two classes
     def is_following(self, user):
         return self.followed.filter_by(followed_id=user.id).first() is not None
 
+    # Define property do not need to call a method this way
+    @property
+    def followed_posts(self):
+        # Here we will use a table join so we can use a single query
+        # First line sets the join
+        # Second line we can set a filter, here we filter Follow table by id
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id)\
+                .filter(Follow.follower_id == self.id)
+
+    # DB method to fix self follows
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
 
 # Add some functionality to the non-logged in user object that flask_login uses
 # We can call can and is_administrator on non-logged in users now
